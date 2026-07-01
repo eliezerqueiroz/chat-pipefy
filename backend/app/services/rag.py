@@ -60,6 +60,15 @@ def get_llm(streaming: bool = True):
             streaming=streaming,
             temperature=0.2,
         )
+    elif settings.llm_provider == "gemini":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
+        return ChatGoogleGenerativeAI(
+            google_api_key=settings.gemini_api_key,
+            model="gemini-1.5-flash",
+            streaming=streaming,
+            temperature=0.2,
+        )
 
     from langchain_openai import ChatOpenAI
 

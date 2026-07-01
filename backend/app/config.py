@@ -11,7 +11,10 @@ class Settings(BaseSettings):
     # OpenAI (optional — only required when llm_provider="openai")
     openai_api_key: str = ""
 
-    # LLM provider: "openai" | "ollama"
+    # Gemini (optional — only required when llm_provider="gemini")
+    gemini_api_key: str = ""
+
+    # LLM provider: "openai" | "ollama" | "gemini"
     # Default is "ollama" for 100% local, zero-cost operation.
     llm_provider: str = "ollama"
 
@@ -21,6 +24,7 @@ class Settings(BaseSettings):
 
     # Embedding dimension:
     # - text-embedding-3-small → 1536
+    # - text-embedding-004 (gemini) → 768
     # - all-MiniLM-L6-v2 (ollama/local) → 384
     embedding_dim: int = 384
 
@@ -47,10 +51,14 @@ class Settings(BaseSettings):
         """
         Auto-set embedding_dim based on the provider when not explicitly overridden:
         - openai  → 1536 (text-embedding-3-small)
+        - gemini  → 768  (text-embedding-004)
         - ollama  → 384  (all-MiniLM-L6-v2)
         """
-        if self.llm_provider == "openai" and self.embedding_dim == 384:
-            object.__setattr__(self, "embedding_dim", 1536)
+        if self.embedding_dim == 384:
+            if self.llm_provider == "openai":
+                object.__setattr__(self, "embedding_dim", 1536)
+            elif self.llm_provider == "gemini":
+                object.__setattr__(self, "embedding_dim", 768)
         return self
 
     @property

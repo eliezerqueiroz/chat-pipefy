@@ -24,6 +24,13 @@ def get_embedding_model():
         logger.info("Using local SentenceTransformer embeddings (all-MiniLM-L6-v2)")
         from sentence_transformers import SentenceTransformer
         return SentenceTransformer("all-MiniLM-L6-v2")
+    elif settings.llm_provider == "gemini":
+        logger.info("Using Gemini text-embedding-004 embeddings")
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        return GoogleGenerativeAIEmbeddings(
+            google_api_key=settings.gemini_api_key,
+            model="models/text-embedding-004"
+        )
 
     logger.info("Using OpenAI embeddings: %s", settings.embedding_model)
     from openai import OpenAI
@@ -49,6 +56,9 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
         # SentenceTransformer returns numpy arrays; convert to Python lists.
         embeddings = model.encode(texts, show_progress_bar=False)
         return [emb.tolist() for emb in embeddings]
+    elif settings.llm_provider == "gemini":
+        # LangChain wrapper returns a list of float lists
+        return model.embed_documents(texts)
 
     # OpenAI client
     response = model.embeddings.create(
@@ -68,4 +78,8 @@ def embed_query(query: str) -> list[float]:
     Returns:
         A single float vector.
     """
+    if settings.llm_provider == "gemini":
+        model = get_embedding_model()
+        return model.embed_query(query)
+        
     return embed_texts([query])[0]
