@@ -51,14 +51,14 @@ class Settings(BaseSettings):
         """
         Auto-set embedding_dim based on the provider when not explicitly overridden:
         - openai  → 1536 (text-embedding-3-small)
-        - gemini  → 768  (text-embedding-004)
+        - gemini  → 3072 (gemini-embedding-001)
         - ollama  → 384  (all-MiniLM-L6-v2)
         """
         if self.embedding_dim == 384:
             if self.llm_provider == "openai":
                 object.__setattr__(self, "embedding_dim", 1536)
             elif self.llm_provider == "gemini":
-                object.__setattr__(self, "embedding_dim", 768)
+                object.__setattr__(self, "embedding_dim", 3072)
         return self
 
     @property

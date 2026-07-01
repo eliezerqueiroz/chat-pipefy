@@ -29,7 +29,7 @@ def get_embedding_model():
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
         return GoogleGenerativeAIEmbeddings(
             google_api_key=settings.gemini_api_key,
-            model="models/text-embedding-004"
+            model="models/gemini-embedding-001"
         )
 
     logger.info("Using OpenAI embeddings: %s", settings.embedding_model)
