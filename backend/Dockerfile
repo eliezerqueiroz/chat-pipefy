@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for Docker layer caching
 COPY requirements.txt .
+# Install CPU-only PyTorch first to prevent downloading CUDA libraries
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application source
