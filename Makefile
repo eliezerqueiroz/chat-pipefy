@@ -5,13 +5,13 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 up: ## Start all services with Docker Compose
-	docker-compose up --build
+	docker compose up --build
 
 down: ## Stop all services
-	docker-compose down
+	docker compose down
 
 build: ## Build all Docker images
-	docker-compose build
+	docker compose build
 
 test: ## Run backend unit tests with coverage
 	cd backend && python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-fail-under=60
