@@ -1,0 +1,1 @@
+"""Chat-Pipefy FastAPI application."""
