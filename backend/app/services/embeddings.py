@@ -1,9 +1,12 @@
 """
 Embedding service.
 
-Supports two providers, selected via the LLM_PROVIDER environment variable:
+Supports multiple providers, selected via the LLM_PROVIDER environment variable:
 - "openai": OpenAI text-embedding-3-small (or configured model)
 - "ollama": sentence-transformers/all-MiniLM-L6-v2 (local, free)
+- "gemini": Gemini embedding API (cloud, subject to quota limits)
+- "gemini-hybrid": sentence-transformers/all-MiniLM-L6-v2 (local, free)
+                    Uses local embeddings to avoid Gemini API quota exhaustion.
 """
 
 import logging
@@ -13,6 +16,9 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Providers that use local SentenceTransformer embeddings
+_LOCAL_EMBEDDING_PROVIDERS = {"ollama", "gemini-hybrid"}
+
 
 @lru_cache(maxsize=1)
 def get_embedding_model():
@@ -20,12 +26,12 @@ def get_embedding_model():
     Return a cached embedding model instance based on LLM_PROVIDER setting.
     Uses lru_cache to avoid re-initializing on every call.
     """
-    if settings.llm_provider == "ollama":
-        logger.info("Using local SentenceTransformer embeddings (all-MiniLM-L6-v2)")
+    if settings.llm_provider in _LOCAL_EMBEDDING_PROVIDERS:
+        logger.info("Using local SentenceTransformer embeddings (all-MiniLM-L6-v2) [provider=%s]", settings.llm_provider)
         from sentence_transformers import SentenceTransformer
         return SentenceTransformer("all-MiniLM-L6-v2")
     elif settings.llm_provider == "gemini":
-        logger.info("Using Gemini text-embedding-004 embeddings")
+        logger.info("Using Gemini embedding API (gemini-embedding-001)")
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
         return GoogleGenerativeAIEmbeddings(
             google_api_key=settings.gemini_api_key,
@@ -52,7 +58,7 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
     model = get_embedding_model()
 
-    if settings.llm_provider == "ollama":
+    if settings.llm_provider in _LOCAL_EMBEDDING_PROVIDERS:
         # SentenceTransformer returns numpy arrays; convert to Python lists.
         embeddings = model.encode(texts, show_progress_bar=False)
         return [emb.tolist() for emb in embeddings]
@@ -81,5 +87,5 @@ def embed_query(query: str) -> list[float]:
     if settings.llm_provider == "gemini":
         model = get_embedding_model()
         return model.embed_query(query)
-        
+
     return embed_texts([query])[0]

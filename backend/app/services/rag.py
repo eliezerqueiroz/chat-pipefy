@@ -4,9 +4,11 @@ RAG (Retrieval-Augmented Generation) service.
 Implements the full RAG pipeline using LangChain LCEL:
   embed query → KNN search Redis → build prompt → stream LLM response
 
-Supports two LLM backends (selected via LLM_PROVIDER env var):
-  - "ollama": Ollama local server (default, no API key required)
+Supports multiple LLM backends (selected via LLM_PROVIDER env var):
+  - "ollama": Ollama local server (no API key required, needs ~5 GB RAM)
   - "openai": OpenAI GPT-4o
+  - "gemini": Gemini API (embeddings + LLM both cloud)
+  - "gemini-hybrid": Local embeddings + Gemini LLM (recommended for low-RAM machines)
 """
 
 import json
@@ -60,7 +62,7 @@ def get_llm(streaming: bool = True):
             streaming=streaming,
             temperature=0.2,
         )
-    elif settings.llm_provider == "gemini":
+    elif settings.llm_provider in ("gemini", "gemini-hybrid"):
         from langchain_google_genai import ChatGoogleGenerativeAI
 
         return ChatGoogleGenerativeAI(

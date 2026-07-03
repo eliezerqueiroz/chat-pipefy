@@ -11,12 +11,12 @@ class Settings(BaseSettings):
     # OpenAI (optional — only required when llm_provider="openai")
     openai_api_key: str = ""
 
-    # Gemini (optional — only required when llm_provider="gemini")
+    # Gemini (optional — only required when llm_provider="gemini" or "gemini-hybrid")
     gemini_api_key: str = ""
 
-    # LLM provider: "openai" | "ollama" | "gemini"
-    # Default is "ollama" for 100% local, zero-cost operation.
-    llm_provider: str = "ollama"
+    # LLM provider: "openai" | "ollama" | "gemini" | "gemini-hybrid"
+    # "gemini-hybrid" = local embeddings (no quota) + Gemini cloud LLM (recommended)
+    llm_provider: str = "gemini-hybrid"
 
     # OpenAI models (used when llm_provider="openai")
     embedding_model: str = "text-embedding-3-small"
@@ -24,8 +24,8 @@ class Settings(BaseSettings):
 
     # Embedding dimension:
     # - text-embedding-3-small → 1536
-    # - text-embedding-004 (gemini) → 768
-    # - all-MiniLM-L6-v2 (ollama/local) → 384
+    # - gemini-embedding-001 (gemini) → 3072
+    # - all-MiniLM-L6-v2 (ollama/gemini-hybrid/local) → 384
     embedding_dim: int = 384
 
     # Ollama (used when llm_provider="ollama")
@@ -50,15 +50,17 @@ class Settings(BaseSettings):
     def set_embedding_dim_for_provider(self) -> "Settings":
         """
         Auto-set embedding_dim based on the provider when not explicitly overridden:
-        - openai  → 1536 (text-embedding-3-small)
-        - gemini  → 3072 (gemini-embedding-001)
-        - ollama  → 384  (all-MiniLM-L6-v2)
+        - openai        → 1536 (text-embedding-3-small)
+        - gemini        → 3072 (gemini-embedding-001)
+        - gemini-hybrid → 384  (all-MiniLM-L6-v2, local)
+        - ollama        → 384  (all-MiniLM-L6-v2, local)
         """
         if self.embedding_dim == 384:
             if self.llm_provider == "openai":
                 object.__setattr__(self, "embedding_dim", 1536)
             elif self.llm_provider == "gemini":
                 object.__setattr__(self, "embedding_dim", 3072)
+            # gemini-hybrid and ollama stay at 384 (local embeddings)
         return self
 
     @property

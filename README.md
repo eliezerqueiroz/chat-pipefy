@@ -32,7 +32,7 @@ Upload PDF, TXT, or DOCX documents and ask questions about their content in natu
 | Backend | Python 3.11 + FastAPI + LangChain LCEL |
 | Vector store | Redis Stack (RedisSearch, HNSW, COSINE) |
 | Embeddings | sentence-transformers/all-MiniLM-L6-v2 (local) |
-| LLM | Ollama + llama3 (local, no API key needed) |
+| LLM | Gemini 2.0 Flash Lite (cloud, free tier) |
 | Infra | Docker Compose |
 | CI | GitHub Actions |
 
@@ -41,8 +41,10 @@ Upload PDF, TXT, or DOCX documents and ask questions about their content in natu
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) + [Docker Compose](https://docs.docker.com/compose/install/)
-- At least **8 GB of RAM** (Ollama + llama3 requires ~5 GB)
+- At least **4 GB of RAM** for Docker (gemini-hybrid mode)
+- A free [Gemini API key](https://aistudio.google.com/) (default provider)
 - (Optional) OpenAI API key if you prefer cloud models
+- (Optional) At least **8 GB of RAM** if using Ollama local mode
 
 ---
 
@@ -91,9 +93,21 @@ docker exec chat-pipefy-ollama ollama pull llama3
 
 ---
 
-## Using OpenAI instead of Ollama
+## Switching LLM Providers
 
-Edit your `.env` file:
+The app supports 4 LLM providers. Edit your `.env` file:
+
+### Gemini Hybrid (default, recommended)
+
+Local embeddings + Gemini cloud LLM. No embedding quota issues, minimal RAM usage.
+
+```env
+LLM_PROVIDER=gemini-hybrid
+GEMINI_API_KEY=your-gemini-api-key
+# Embedding dim stays at 384 (local sentence-transformers)
+```
+
+### OpenAI
 
 ```env
 LLM_PROVIDER=openai
@@ -103,7 +117,30 @@ LLM_MODEL=gpt-4o
 EMBEDDING_DIM=1536
 ```
 
-> **Note**: If you switch providers after indexing documents, recreate the Redis index (dimensions differ: 1536 vs 384). Run `docker-compose down -v` to reset volumes.
+### Ollama (100% local)
+
+Requires ~5 GB RAM. Start with the `local-llm` profile:
+
+```bash
+docker compose --profile local-llm up --build
+docker exec chat-pipefy-ollama ollama pull llama3
+```
+
+```env
+LLM_PROVIDER=ollama
+```
+
+### Gemini (full cloud)
+
+Both embeddings and LLM via Gemini API. Subject to embedding quota limits.
+
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your-gemini-api-key
+EMBEDDING_DIM=3072
+```
+
+> **Note**: If you switch providers after indexing documents, recreate the Redis index (dimensions differ). Run `docker compose down -v` to reset volumes.
 
 ---
 
@@ -199,10 +236,11 @@ cd frontend && npm install && npm run dev
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LLM_PROVIDER` | `ollama` | `openai` or `ollama` |
+| `LLM_PROVIDER` | `gemini-hybrid` | `gemini-hybrid`, `ollama`, `gemini`, or `openai` |
+| `GEMINI_API_KEY` | _(empty)_ | Required if `LLM_PROVIDER` is `gemini-hybrid` or `gemini` |
 | `OPENAI_API_KEY` | _(empty)_ | Required if `LLM_PROVIDER=openai` |
 | `OLLAMA_MODEL` | `llama3` | Ollama model name |
-| `EMBEDDING_DIM` | `384` | Must match the embedding model output |
+| `EMBEDDING_DIM` | `384` | Auto-set by provider (384 for local, 1536 for OpenAI, 3072 for Gemini) |
 | `REDIS_URL` | `redis://redis:6379` | Redis connection string |
 | `CHUNK_SIZE` | `500` | Characters per text chunk |
 | `CHUNK_OVERLAP` | `50` | Overlap between chunks |
