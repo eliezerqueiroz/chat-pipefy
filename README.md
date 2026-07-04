@@ -131,9 +131,9 @@ TOTAL                            412     63    85%
 
 ---
 
-## 🔍 Detalhes de Implementação para Avaliadores
+## 🔍 Estrutura de Dados & Persistência Vetorial
 
-### Estrutura de Chunks e Indexação no Redis
+### Modelagem de Chunks no Redis
 Os dados são fragmentados dinamicamente em blocos de texto respeitando os limites de tokens e overlaps configurados no `.env`. A estrutura persistida no Redis é mantida sob chaves do tipo `doc:{file_id}:chunk:{chunk_index}` contendo os seguintes campos em formato Hash:
 
 ```json
@@ -147,8 +147,8 @@ Os dados são fragmentados dinamicamente em blocos de texto respeitando os limit
 }
 ```
 
-### Fluxo de Limpeza e Persistência
+### Mecanismo de Remoção em Cascata
 Quando um documento é removido pelo frontend, a rota `DELETE /documents/{id}` executa uma consulta rápida no Redis para encontrar todas as chaves associadas ao prefixo `doc:{id}:*` e efetua a remoção em massa, limpando o armazenamento e o índice vetorial de forma síncrona.
 
 ---
-Desenvolvido por **Eliezer Queiroz** para o processo seletivo de **Software Engineer Pleno Data & AI da Pipefy**.
+Desenvolvido por **Eliezer Queiroz**.
