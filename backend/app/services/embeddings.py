@@ -17,7 +17,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 # Providers that use local SentenceTransformer embeddings
-_LOCAL_EMBEDDING_PROVIDERS = {"ollama", "gemini-hybrid"}
+_LOCAL_EMBEDDING_PROVIDERS = {"ollama", "gemini-hybrid", "groq-hybrid"}
 
 
 @lru_cache(maxsize=1)

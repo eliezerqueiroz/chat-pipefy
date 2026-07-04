@@ -95,15 +95,15 @@ docker exec chat-pipefy-ollama ollama pull llama3
 
 ## Switching LLM Providers
 
-The app supports 4 LLM providers. Edit your `.env` file:
+The app supports multiple LLM providers. Edit your `.env` file:
 
-### Gemini Hybrid (default, recommended)
+### Groq Hybrid (default, recommended)
 
-Local embeddings + Gemini cloud LLM. No embedding quota issues, minimal RAM usage.
+Local embeddings (all-MiniLM-L6-v2) + Groq cloud LLM (Llama 3.3). Extremely fast inference speed (tokens/sec) and zero embedding costs.
 
 ```env
-LLM_PROVIDER=gemini-hybrid
-GEMINI_API_KEY=your-gemini-api-key
+LLM_PROVIDER=groq-hybrid
+GROQ_API_KEY=your-groq-api-key
 # Embedding dim stays at 384 (local sentence-transformers)
 ```
 
@@ -128,16 +128,6 @@ docker exec chat-pipefy-ollama ollama pull llama3
 
 ```env
 LLM_PROVIDER=ollama
-```
-
-### Gemini (full cloud)
-
-Both embeddings and LLM via Gemini API. Subject to embedding quota limits.
-
-```env
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=your-gemini-api-key
-EMBEDDING_DIM=3072
 ```
 
 > **Note**: If you switch providers after indexing documents, recreate the Redis index (dimensions differ). Run `docker compose down -v` to reset volumes.

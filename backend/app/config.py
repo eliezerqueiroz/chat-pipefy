@@ -3,6 +3,8 @@ Application configuration using Pydantic Settings.
 All values are loaded from environment variables or the .env file.
 """
 
+from typing import Optional, Literal
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import model_validator
 
@@ -11,12 +13,20 @@ class Settings(BaseSettings):
     # OpenAI (optional — only required when llm_provider="openai")
     openai_api_key: str = ""
 
+    # Anthropic (optional — only required when llm_provider="anthropic")
+    anthropic_api_key: Optional[str] = Field(None, description="Anthropic API Key")
+
+    # Groq (optional — only required when llm_provider="groq-hybrid")
+    groq_api_key: Optional[str] = Field(None, description="Groq API Key")
+
     # Gemini (optional — only required when llm_provider="gemini" or "gemini-hybrid")
     gemini_api_key: str = ""
 
-    # LLM provider: "openai" | "ollama" | "gemini" | "gemini-hybrid"
+    # LLM provider: "openai" | "anthropic" | "ollama" | "gemini" | "gemini-hybrid" | "groq-hybrid"
     # "gemini-hybrid" = local embeddings (no quota) + Gemini cloud LLM (recommended)
-    llm_provider: str = "gemini-hybrid"
+    llm_provider: Literal[
+        "openai", "anthropic", "ollama", "gemini", "gemini-hybrid", "groq-hybrid"
+    ] = "gemini-hybrid"
 
     # OpenAI models (used when llm_provider="openai")
     embedding_model: str = "text-embedding-3-small"
@@ -55,12 +65,13 @@ class Settings(BaseSettings):
         - gemini-hybrid → 384  (all-MiniLM-L6-v2, local)
         - ollama        → 384  (all-MiniLM-L6-v2, local)
         """
-        if self.embedding_dim == 384:
+        if self.llm_provider in ("groq-hybrid", "gemini-hybrid", "ollama"):
+            object.__setattr__(self, "embedding_dim", 384)
+        elif self.embedding_dim == 384:
             if self.llm_provider == "openai":
                 object.__setattr__(self, "embedding_dim", 1536)
             elif self.llm_provider == "gemini":
                 object.__setattr__(self, "embedding_dim", 3072)
-            # gemini-hybrid and ollama stay at 384 (local embeddings)
         return self
 
     @property

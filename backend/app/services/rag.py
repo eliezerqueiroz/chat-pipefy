@@ -62,6 +62,15 @@ def get_llm(streaming: bool = True):
             streaming=streaming,
             temperature=0.2,
         )
+    elif settings.llm_provider == "groq-hybrid":
+        from langchain_groq import ChatGroq
+
+        return ChatGroq(
+            api_key=settings.groq_api_key,
+            model="llama-3.3-70b-versatile",
+            streaming=streaming,
+            temperature=0.2,
+        )
     elif settings.llm_provider in ("gemini", "gemini-hybrid"):
         from langchain_google_genai import ChatGoogleGenerativeAI
 

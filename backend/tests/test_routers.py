@@ -96,7 +96,7 @@ class TestUploadRouter:
             "/upload",
             files={"file": ("", b"content", "text/plain")},
         )
-        assert response.status_code == 400
+        assert response.status_code == 422
 
 
 class TestChatRouter:
