@@ -1,5 +1,5 @@
 # Chat-Pipefy 🚀
-> **Desafio Técnico: Data & AI Software Engineer (Pipefy)**
+> Sistema de chat com documentos via IA, construído com RAG, Redis e LangChain.
 
 Um sistema completo de **Retrieval-Augmented Generation (RAG)** de alta performance que permite fazer upload de documentos e interagir com eles por chat com respostas baseadas em contexto e referências às fontes originais.
 
@@ -41,7 +41,7 @@ Este nível descreve o escopo do sistema, quem interage com ele e suas dependên
 
 ```mermaid
 graph TD
-    User([Usuário / Recrutador]) -->|Interage com Chat & Upload| System[Sistema Chat-Pipefy]
+    User([Usuário]) -->|Interage com Chat & Upload| System[Sistema Chat-Pipefy]
     System -->|Consome inferência LLM| Groq[Groq LPU Cloud]
 ```
 
@@ -51,7 +51,7 @@ Este nível mostra os containers de software que compõem o sistema e como eles 
 
 ```mermaid
 graph TD
-    User([Usuário / Recrutador]) -->|Acessa via HTTP| FE[Frontend React Container <br> Nginx / Vite]
+    User([Usuário]) -->|Acessa via HTTP| FE[Frontend React Container <br> Nginx / Vite]
     FE -->|Requests HTTP & SSE Streaming| BE[Backend FastAPI Container <br> Python 3.11]
     BE -->|Consulta & Armazena Vetores| Redis[(Redis Stack Container <br> Módulo RedisSearch)]
     BE -->|Geração de Texto em Tempo Real| Groq[Groq LPU Cloud <br> Llama 3.3 via HTTPS]
