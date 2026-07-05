@@ -7,6 +7,12 @@ A aplicação foi projetada focando em **latência extremamente baixa**, **efici
 
 ---
 
+## 📸 Demonstração da Interface (UI)
+
+![Demonstração do Frontend](docs/assets/demo.png)
+
+---
+
 ## 🛠️ O que o Projeto Faz (Features de Destaque)
 
 - **Upload Multiformato:** Suporte a arquivos `.pdf`, `.txt` e `.docx`.
@@ -18,45 +24,117 @@ A aplicação foi projetada focando em **latência extremamente baixa**, **efici
 
 ---
 
-## 🏗️ Arquitetura do Sistema
+## 🏗️ Arquitetura do Sistema (C4 Model)
 
-O projeto adota uma arquitetura distribuída, 100% containerizada via Docker Compose:
+Para demonstrar a maturidade da arquitetura, o design do sistema foi modelado seguindo a metodologia **C4 Model**.
 
-```
-                  ┌──────────────────────┐
-                  │       Frontend       │
-                  │ (React + Vite + TS)  │
-                  └──────────┬───────────┘
-                             │ (Port 80)
-                             ▼ (HTTP / Server-Sent Events)
-                  ┌──────────────────────┐
-                  │    Backend API       │
-                  │      (FastAPI)       │
-                  └──────┬────────────┬──┘
-             (Port 8000) │            │
-                         │            │ (Conexão TCP)
-                         ▼            ▼
-   ┌───────────────────────┐        ┌───────────────────────┐
-   │    Local Embeddings   │        │     Vector Store      │
-   │ (SentenceTransformer  │        │   (Redis Stack HNSW)  │
-   │    all-MiniLM-L6-v2)  │        └───────────────────────┘
-   └───────────────────────┘
-                         │
-                         ▼ (HTTPS / API)
-   ┌───────────────────────┐
-   │    Groq LPU Cloud     │
-   │      (Llama 3.3)      │
-   └───────────────────────┘
+### C4 - Nível 1: Diagrama de Contexto de Sistema
+
+Este nível descreve o escopo do sistema, quem interage com ele e suas dependências externas.
+
+```mermaid
+graph TD
+    User([Usuário / Recrutador]) -->|Interage com Chat & Upload| System[Sistema Chat-Pipefy]
+    System -->|Consome inferência LLM| Groq[Groq LPU Cloud]
 ```
 
-### Decisões Arquiteturais Relevantes (Diferenciais Técnicos)
+### C4 - Nível 2: Diagrama de Containers
 
-1. **Abordagem Groq-Hybrid (Eficiência e Baixo Custo):** 
-   Utilizamos a biblioteca open-source `SentenceTransformers` rodando diretamente na CPU do container FastAPI para gerar embeddings locais (vetor de **384 dimensões**). A inferência é terceirizada para os chips LPU da **Groq Cloud** usando o modelo **Llama 3.3**. Isso elimina custos com APIs de embeddings (como OpenAI) e evita limites de cota (*Rate Limits*), mantendo a latência global abaixo de 1 segundo.
-2. **Redis como Banco Vetorial:** 
-   Optou-se pelo módulo **RedisSearch** com indexação **HNSW (Hierarchical Navigable Small World)** e distância **Cosseno**. Isso garante pesquisas de vizinhos mais próximos em tempo sub-milissegundo, mesmo com o aumento do volume de documentos.
-3. **Orquestração LCEL:** 
-   O pipeline do RAG é estruturado usando **LangChain Expression Language (LCEL)**, garantindo modularidade para troca fácil de modelos/parâmetros, além de facilitação nativa para streaming.
+Este nível mostra os containers de software que compõem o sistema e como eles se comunicam.
+
+```mermaid
+graph TD
+    User([Usuário / Recrutador]) -->|Acessa via HTTP| FE[Frontend React Container <br> Nginx / Vite]
+    FE -->|Requests HTTP & SSE Streaming| BE[Backend FastAPI Container <br> Python 3.11]
+    BE -->|Consulta & Armazena Vetores| Redis[(Redis Stack Container <br> Módulo RedisSearch)]
+    BE -->|Geração de Texto em Tempo Real| Groq[Groq LPU Cloud <br> Llama 3.3 via HTTPS]
+```
+
+---
+
+## 🧬 Padrão Arquitetural do Backend (MSC/REST)
+
+O backend FastAPI foi estruturado sob o padrão **MSC (Model-Service-Controller)** para garantir o desacoplamento de responsabilidades e facilitar testes unitários.
+
+```
+┌────────────────────────────────────────────────────────┐
+│                       FastAPI                          │
+│                                                        │
+│ 1. Controller/Routers (HTTP/REST)                      │
+│    └── app/routers/chat.py                             │
+│    └── app/routers/upload.py                           │
+│                                                        │
+│ 2. Models (Pydantic validation schemas)                │
+│    └── app/models/chat.py                              │
+│                                                        │
+│ 3. Services (Core Business Logic)                      │
+│    └── app/services/rag.py                             │
+│    └── app/services/vector_store.py                    │
+│    └── app/services/embeddings.py                      │
+└────────────────────────────────────────────────────────┘
+```
+
+### Componentes e Responsabilidades:
+1.  **Routers (Controllers):** Expõem endpoints RESTful assíncronos. Eles validam os payloads de entrada através de schemas Pydantic e delegam as regras de negócio para a camada de serviços.
+2.  **Services:** Centralizam as tarefas complexas. O `ingestion.py` cuida da extração do texto, o `embeddings.py` inicializa o modelo de embeddings (local ou nuvem), o `vector_store.py` faz chamadas à API do Redis e o `rag.py` orquestra a chain de inferência.
+3.  **Models:** Classes base do Pydantic que garantem tipagem estrita e validação de dados em tempo de requisição.
+
+### Princípios RESTful Adotados:
+*   **Statelessness:** Nenhuma sessão HTTP ou contexto é armazenado na memória da API. A persistência do histórico do chat é isolada no banco de dados através da variável de sessão (`session_id`) enviada pelo cliente.
+*   **Interface Uniforme:** Uso correto dos métodos HTTP (`POST /upload` para indexar recursos, `DELETE /documents/{id}` para deletar síncronamente, e `GET /documents` para listagem).
+
+---
+
+## 🔍 Estrutura de Dados & Persistência Vetorial (NoSQL)
+
+A modelagem de dados de vetores no Redis é do tipo **NoSQL baseada em Chave-Valor (Redis Hashes)**.
+
+As informações extraídas de cada arquivo PDF/TXT são divididas em chunks. Cada chunk é inserido no Redis sob uma chave única seguindo o padrão `doc:{file_id}:chunk:{chunk_index}` contendo os seguintes campos:
+
+```json
+{
+  "content": "Conteúdo extraído em texto plano...",
+  "embedding": "Vetor binário Float32 (384 dimensões)",
+  "source": "manual_colaborador.pdf",
+  "file_id": "8de3229e-937e-42a6-8d63-bb487fe1ab08",
+  "chunk_index": 0,
+  "uploaded_at": "2026-07-04T00:12:05Z"
+}
+```
+
+### Mecanismo de Remoção em Cascata
+Quando o usuário aciona o endpoint `DELETE /documents/{id}`, a API realiza os seguintes passos de maneira síncrona:
+1.  Executa uma query no Redis para buscar todas as chaves do prefixo `doc:{id}:*`.
+2.  Remove todas as chaves encontradas simultaneamente.
+3.  O indexador automático do RedisSearch atualiza o índice vetorial, impedindo que trechos do documento excluído retornem nas próximas perguntas.
+
+---
+
+## 🛠️ Comandos Úteis (Makefile)
+
+O projeto inclui um `Makefile` na raiz para simplificar tarefas comuns de desenvolvimento e automação de testes:
+
+| Comando | Descrição |
+| :--- | :--- |
+| `make test` | Roda todos os testes unitários dentro do ambiente local. |
+| `make lint` | Executa o linter flake8 e validação estática de tipos do mypy. |
+| `make format` | Formata o código python automaticamente seguindo o padrão do Black. |
+| `make coverage` | Gera o relatório de cobertura de código em formato HTML. |
+
+---
+
+## 🧪 Esteira de CI (GitHub Actions)
+
+A aplicação conta com um pipeline de **CI (Integração Contínua)** configurado em `.github/workflows/ci.yml`.
+
+### Como Funciona:
+1.  **Gatilho:** Executado automaticamente a cada **Push** ou **Pull Request** direcionado à branch `main`.
+2.  **Etapas do Workflow:**
+    *   Sobe o container do Redis Stack como serviço dependente temporário.
+    *   Instala as dependências especificadas no `requirements.txt`.
+    *   Roda os formatadores (`black --check`, `isort --check`).
+    *   Executa os testes unitários do backend através do `pytest` com relatório de cobertura.
+    *   **Gate de Qualidade:** O build do CI falha se a cobertura de testes do backend for menor que **60%** (atualmente o projeto conta com **85%** de cobertura).
 
 ---
 
@@ -87,68 +165,10 @@ Execute o comando abaixo para construir as imagens e subir os serviços:
 docker compose up --build -d
 ```
 
-Este comando iniciará:
-- **`chat-pipefy-redis`** (Porta 6379 / Interface Visual RedisInsight na porta 8001)
-- **`chat-pipefy-backend`** (Porta 8000 / Documentação Swagger na porta 8000/docs)
-- **`chat-pipefy-frontend`** (Porta 80 / Aplicação Web React)
-
 ### 3. Acessar a Aplicação
 - **Interface Gráfica (Web):** [http://localhost](http://localhost)
 - **Documentação de Rotas (FastAPI):** [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Explorador do Redis (RedisInsight):** [http://localhost:8001](http://localhost:8001)
-
----
-
-## 🧪 Rodando os Testes e Cobertura (Coverage)
-
-A suíte de testes unitários cobre integralmente o pipeline de ingestão, as APIs e as mocks de comunicação com Redis e LLM externos.
-
-Para rodar os testes localmente via Docker (garantindo que não haverá incompatibilidade de bibliotecas no seu ambiente local):
-
-```bash
-# Executa todos os testes com relatório detalhado de cobertura de linhas
-docker compose exec backend pytest --cov=app --cov-report=term-missing
-```
-
-### Resumo de Cobertura do Backend
-Atualmente os testes alcançam **85% de cobertura global**, ultrapassando com folga o limite mínimo de 60% exigido no edital:
-
-```text
-Name                           Stmts   Miss  Cover   Missing
-------------------------------------------------------------
-app/config.py                     38      5    87%   70-74
-app/main.py                       25      2    92%   56-57
-app/routers/chat.py               11      0   100%
-app/routers/documents.py          13      0   100%
-app/routers/upload.py             41      7    83%   40, 92, 101-105
-app/services/embeddings.py        34     14    59%   33-43, 57, 65-74, 88-89
-app/services/ingestion.py         48      5    90%   37-41
-app/services/rag.py               77     16    79%   56-86, 96, 131-132, 150-151
-app/services/vector_store.py      84     14    83%   46-72, 176, 221-225
-------------------------------------------------------------
-TOTAL                            412     63    85%
-```
-
----
-
-## 🔍 Estrutura de Dados & Persistência Vetorial
-
-### Modelagem de Chunks no Redis
-Os dados são fragmentados dinamicamente em blocos de texto respeitando os limites de tokens e overlaps configurados no `.env`. A estrutura persistida no Redis é mantida sob chaves do tipo `doc:{file_id}:chunk:{chunk_index}` contendo os seguintes campos em formato Hash:
-
-```json
-{
-  "content": "Conteúdo extraído em texto plano...",
-  "embedding": "Vetor binário Float32 (384 dimensões)",
-  "source": "manual_colaborador.pdf",
-  "file_id": "8de3229e-937e-42a6-8d63-bb487fe1ab08",
-  "chunk_index": 0,
-  "uploaded_at": "2026-07-04T00:12:05Z"
-}
-```
-
-### Mecanismo de Remoção em Cascata
-Quando um documento é removido pelo frontend, a rota `DELETE /documents/{id}` executa uma consulta rápida no Redis para encontrar todas as chaves associadas ao prefixo `doc:{id}:*` e efetua a remoção em massa, limpando o armazenamento e o índice vetorial de forma síncrona.
 
 ---
 Desenvolvido por **Eliezer Queiroz**.
