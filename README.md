@@ -10,7 +10,7 @@ A aplicação foi projetada focando em **latência extremamente baixa**, **efici
 ## 📸 Demonstração do Projeto (Serviços)
 
 ### 1. Chat UI (Interface do Usuário)
-![Chat UI](docs/assets/demo.png)
+![Chat UI](docs/assets/uidemo.png)
 
 ### 2. Swagger API Docs (FastAPI Backend)
 ![Swagger API](docs/assets/swagger.png)
