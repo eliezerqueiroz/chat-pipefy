@@ -7,9 +7,15 @@ A aplicação foi projetada focando em **latência extremamente baixa**, **efici
 
 ---
 
-## 📸 Demonstração da Interface (UI)
+## 📸 Demonstração do Projeto (Serviços)
 
-![Demonstração do Frontend](docs/assets/demo.png)
+````carousel
+![1. Chat UI (Interface do Usuário)](docs/assets/demo.png)
+<!-- slide -->
+![2. Swagger API Docs (FastAPI)](docs/assets/swagger.png)
+<!-- slide -->
+![3. RedisInsight (Banco de Dados Vetorial)](docs/assets/redisinsight.png)
+````
 
 ---
 
