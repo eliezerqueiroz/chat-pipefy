@@ -41,3 +41,4 @@ frontend/.vite/
 *.swo
 .DS_Store
 Thumbs.db
+chat-pipefy.code-workspace

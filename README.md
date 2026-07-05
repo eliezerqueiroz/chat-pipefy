@@ -9,13 +9,14 @@ A aplicação foi projetada focando em **latência extremamente baixa**, **efici
 
 ## 📸 Demonstração do Projeto (Serviços)
 
-````carousel
-![1. Chat UI (Interface do Usuário)](docs/assets/demo.png)
-<!-- slide -->
-![2. Swagger API Docs (FastAPI)](docs/assets/swagger.png)
-<!-- slide -->
-![3. RedisInsight (Banco de Dados Vetorial)](docs/assets/redisinsight.png)
-````
+### 1. Chat UI (Interface do Usuário)
+![Chat UI](docs/assets/demo.png)
+
+### 2. Swagger API Docs (FastAPI Backend)
+![Swagger API](docs/assets/swagger.png)
+
+### 3. RedisInsight (Banco de Dados Vetorial)
+![RedisInsight](docs/assets/redisinsight.png)
 
 ---
 
@@ -122,10 +123,15 @@ O projeto inclui um `Makefile` na raiz para simplificar tarefas comuns de desenv
 
 | Comando | Descrição |
 | :--- | :--- |
-| `make test` | Roda todos os testes unitários dentro do ambiente local. |
-| `make lint` | Executa o linter flake8 e validação estática de tipos do mypy. |
-| `make format` | Formata o código python automaticamente seguindo o padrão do Black. |
+| `make help` | Exibe a lista de todos os comandos disponíveis no Makefile. |
+| `make up` | Sobe todos os serviços via Docker Compose com build automático. |
+| `make down` | Para e remove todos os containers. |
+| `make build` | Reconstrói todas as imagens Docker sem iniciar os serviços. |
+| `make test` | Roda todos os testes unitários com cobertura mínima de 60%. |
 | `make coverage` | Gera o relatório de cobertura de código em formato HTML. |
+| `make lint` | Executa o linter `flake8` e validação estática de tipos via `mypy`. |
+| `make format` | Formata o código Python automaticamente com `black` e `isort`. |
+| `make clean` | Remove caches, `__pycache__`, `.pytest_cache` e artefatos de build. |
 
 ---
 
