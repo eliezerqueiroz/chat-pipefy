@@ -1,5 +1,5 @@
 # Chat-Pipefy 🚀
-> Sistema de chat com documentos via IA, construído com RAG, Redis e LangChain.
+> Converse com seus documentos em linguagem natural — pipeline RAG com busca vetorial (Redis), LangChain e Llama 3.3.
 
 Um sistema completo de **Retrieval-Augmented Generation (RAG)** de alta performance que permite fazer upload de documentos e interagir com eles por chat com respostas baseadas em contexto e referências às fontes originais.
 
